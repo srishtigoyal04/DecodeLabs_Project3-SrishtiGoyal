@@ -1,0 +1,161 @@
+{
+  "info": {
+    "name": "Secure Auth API",
+    "_postman_id": "secure-auth-api-v1",
+    "description": "Complete JWT authentication test suite. Run requests in order 1→9.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000",
+      "type": "string"
+    },
+    {
+      "key": "jwt_token",
+      "value": "",
+      "type": "string",
+      "description": "Auto-populated after login via test script"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Health Check — GET /health",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{base_url}}/health" }
+      }
+    },
+    {
+      "name": "2. Register User (John) — POST /register",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"john_doe\",\n  \"email\": \"john@example.com\",\n  \"password\": \"securepass123\"\n}"
+        },
+        "url": { "raw": "{{base_url}}/register" }
+      }
+    },
+    {
+      "name": "3. Register — Duplicate Username (409)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"john_doe\",\n  \"email\": \"other@example.com\",\n  \"password\": \"somepassword\"\n}"
+        },
+        "url": { "raw": "{{base_url}}/register" },
+        "description": "Expect 409 Conflict — username already taken"
+      }
+    },
+    {
+      "name": "4. Register — Duplicate Email (409)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"other_user\",\n  \"email\": \"john@example.com\",\n  \"password\": \"somepassword\"\n}"
+        },
+        "url": { "raw": "{{base_url}}/register" },
+        "description": "Expect 409 Conflict — email already registered"
+      }
+    },
+    {
+      "name": "5. Register — Validation Error (422)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"x\",\n  \"email\": \"not-an-email\",\n  \"password\": \"short\"\n}"
+        },
+        "url": { "raw": "{{base_url}}/register" },
+        "description": "Expect 422 — username too short, invalid email, password too short"
+      }
+    },
+    {
+      "name": "6. Login — POST /login",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Auto-save the token for use in subsequent requests",
+              "var json = pm.response.json();",
+              "if (json.access_token) {",
+              "    pm.collectionVariables.set('jwt_token', json.access_token);",
+              "    console.log('Token saved:', json.access_token.substring(0, 50) + '...');",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"john@example.com\",\n  \"password\": \"securepass123\"\n}"
+        },
+        "url": { "raw": "{{base_url}}/login" },
+        "description": "Returns JWT token. The Postman test script saves it to {{jwt_token}} automatically."
+      }
+    },
+    {
+      "name": "7. Login — Wrong Password (401)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"john@example.com\",\n  \"password\": \"wrongpassword\"\n}"
+        },
+        "url": { "raw": "{{base_url}}/login" },
+        "description": "Expect 401 Unauthorized — wrong password"
+      }
+    },
+    {
+      "name": "8. Profile — GET /profile (with JWT)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "description": "Auto-filled from step 6"
+          }
+        ],
+        "url": { "raw": "{{base_url}}/profile" },
+        "description": "Protected route. Requires valid JWT in Authorization header."
+      }
+    },
+    {
+      "name": "9. Profile — No Token (401)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{base_url}}/profile" },
+        "description": "Expect 401 — no Authorization header provided"
+      }
+    },
+    {
+      "name": "10. Profile — Invalid Token (401)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer this.is.not.a.real.token"
+          }
+        ],
+        "url": { "raw": "{{base_url}}/profile" },
+        "description": "Expect 401 — token signature invalid"
+      }
+    }
+  ]
+}

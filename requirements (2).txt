@@ -1,0 +1,20 @@
+# Web framework
+fastapi==0.115.5
+
+# ASGI server — runs FastAPI
+uvicorn[standard]==0.32.1
+
+# SQLAlchemy ORM + SQLite (SQLite driver is built into Python stdlib)
+sqlalchemy==2.0.36
+
+# Pydantic v2 — request/response validation
+pydantic==2.10.3
+pydantic[email]==2.10.3     # Adds EmailStr support
+email-validator==2.2.0       # Required by pydantic[email]
+
+# Password hashing — bcrypt via Passlib
+passlib[bcrypt]==1.7.4
+bcrypt==4.2.1
+
+# JWT — JSON Web Tokens
+python-jose[cryptography]==3.3.0
